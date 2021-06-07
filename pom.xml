@@ -2,36 +2,89 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<properties>
-		<version.feilong-platform>2.1.0</version.feilong-platform>
-	</properties>
 	<groupId>org.deking.utils</groupId>
 	<artifactId>simpleTextUtil</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
+	<version>1.0.7-SNAPSHOT</version>
 	<name>simpleTextUtil</name>
 	<packaging>jar</packaging>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<maven.compiler.encoding>UTF-8</maven.compiler.encoding>
+		<java.version>11</java.version>
+		<maven.compiler.source>${java.version}</maven.compiler.source>
+		<maven.compiler.target>${java.version}</maven.compiler.target>
+	</properties>
 	<dependencies>
-		<dependency>
-			<groupId>org.json</groupId>
-			<artifactId>json</artifactId>
-			<version>20190722</version>
-		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
 			<version>3.11</version>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-api -->
 		<dependency>
-			<groupId>com.feilong.platform</groupId>
-			<artifactId>feilong-core</artifactId>
-			<version>${version.feilong-platform}</version>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>2.0.0-alpha1</version>
 		</dependency>
 	</dependencies>
-	<repositories>
+	<distributionManagement>
+		<snapshotRepository>
+			<id>ossrh</id>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+		</snapshotRepository>
 		<repository>
-			<id>feilong-repository</id>
-			<url>https://github.com/venusdrogon/feilong-platform/repository</url>
+			<id>ossrh</id>
+			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
 		</repository>
-	</repositories> 
+	</distributionManagement> 
+	<build>
+		<plugins>
+			<plugin>
+	       		<groupId>org.apache.maven.plugins</groupId>
+			    <artifactId>maven-surefire-plugin</artifactId>
+			    <version>3.0.0-M5</version> 
+			    <configuration>
+			    	<skip>true</skip>
+			     </configuration>
+			</plugin>  
+			<plugin>
+				<groupId>org.sonatype.plugins</groupId>
+				<artifactId>nexus-staging-maven-plugin</artifactId>
+				<version>1.6.7</version>
+				<extensions>true</extensions>
+				<configuration>
+					<serverId>ossrh</serverId>
+					<nexusUrl>https://oss.sonatype.org/</nexusUrl>
+					<autoReleaseAfterClose>true</autoReleaseAfterClose>
+				</configuration>
+			</plugin> 
+			<plugin>
+			  <groupId>org.apache.maven.plugins</groupId>
+			  <artifactId>maven-gpg-plugin</artifactId>
+			  <version>1.5</version>
+			  <executions>
+				<execution>
+				  <id>sign-artifacts</id>
+				  <phase>verify</phase>
+				  <goals>
+					<goal>sign</goal>
+				  </goals>
+				</execution>
+			  </executions>
+			</plugin>
+			<plugin>
+			  <groupId>org.sonatype.plugins</groupId>
+			  <artifactId>nexus-staging-maven-plugin</artifactId>
+			  <version>1.6.7</version>
+			  <extensions>true</extensions>
+			  <configuration>
+				 <serverId>ossrh</serverId>
+				 <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+				 <autoReleaseAfterClose>true</autoReleaseAfterClose>
+			  </configuration>
+			</plugin>  
+		</plugins>
+	</build>
 </project>

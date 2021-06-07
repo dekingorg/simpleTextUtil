@@ -1,5 +1,7 @@
 package org.deking.utils;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -10,9 +12,12 @@ import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
+import java.text.MessageFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.regex.Matcher;
@@ -22,12 +27,12 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.text.translate.UnicodeUnescaper;
-
-import com.feilong.core.lang.StringUtil;
-import com.feilong.core.text.MessageFormatUtil;
-import com.feilong.tools.slf4j.Slf4jUtil;
+import static org.apache.commons.lang3.StringUtils.isEmpty;
+import static org.apache.commons.lang3.Validate.notNull;
+import static org.apache.commons.lang3.text.StrSubstitutor.replace;
+import   org.apache.commons.lang3.text.translate.UnicodeUnescaper;
+import static org.slf4j.helpers.MessageFormatter.arrayFormat;
+import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 @SuppressWarnings("deprecation")
 public class simpleTextUtil {
@@ -35,66 +40,56 @@ public class simpleTextUtil {
 	 * @Title: formatString
 	 * @Description: 格式化函數
 	 * @return String
-	 * @param formatType
+	 * @param formatStringEnum
 	 * @param stringBody
 	 * @param args
 	 * @return
 	 * @date 2020年2月7日 下午6:00:24
-	 */
+	 */ 
+	public static enum FormatStringEnum{
+		ADD,STRING_FORMAT,STRING_BUILDER,STRING_BUFFER,MESSAGE_FORMATTER,MESSAGE_FORMAT,STRSUBSTITUTOR_REPLACE,NONE;
+	}
 	@SuppressWarnings("unchecked")
-	public static final String formatString(int formatType, String stringBody, Object... args) {
-		switch (formatType) {
-		case 1:
-			return stringBody + (args.length == 1 ? args[0] : StringUtils.join(args));
-		case 2:
+	public static final String formatString(FormatStringEnum formatStringEnum, String stringBody, Object... args) {
+		switch (formatStringEnum) {
+		case ADD:
+			return stringBody + args[0];
+		case STRING_FORMAT:
 			return String.format(stringBody, args);
-		case 3:
+		case STRING_BUILDER:
 			StringBuilder sb = new StringBuilder(stringBody);
-			for (Object s : args) {
-				sb.append(s);
-			}
+			Arrays.stream(args).forEach(x -> sb.append(x));
 			return sb.toString();
-		case 4:
+		case STRING_BUFFER:
 			StringBuffer sf = new StringBuffer(stringBody);
-			for (Object s : args) {
-				sf.append(s);
-			}
+			Arrays.stream(args).forEach(x -> sf.append(x));
 			return sf.toString();
-		case 5:
-			return Slf4jUtil.format(stringBody, args);
-		case 6:
-			return MessageFormatUtil.format(stringBody, args);
-		case 7:
-			return StringUtil.replace(stringBody, (HashMap<String, String>) args[0]);// ${account}
-		case 8:
-			return StringUtil.format(stringBody, args);
-//		case 9:
-//			 velocityUtil
-//             .parseString(stringBody, new HashMap<String, String>() {
-//				{
-//					put("account", args.toString());
-//				}
-//			});
+		case MESSAGE_FORMATTER:
+			return  arrayFormat(stringBody, args).getMessage();
+		case MESSAGE_FORMAT:
+			 notNull(stringBody, "pattern can't be null!", new Object[0]);
+			return MessageFormat.format(stringBody, args);
+		case STRSUBSTITUTOR_REPLACE:
+			return  isEmpty(stringBody) ? EMPTY
+					: replace(stringBody, (HashMap<String, String>) args[0]);
 		default:
 			return stringBody;
 		}
 	}
-
 	public static final String textMatcher(String response, Object patternObject, int... groupIndex)
 			throws java.lang.IllegalStateException {
 		Matcher m = patternObject instanceof String ? Pattern.compile(patternObject.toString()).matcher(response)
 				: ((Pattern) patternObject).matcher(response);
 		m.find();
-		if (groupIndex.length != 0) {
+		if (groupIndex.length != 0) 
 			return m.group(groupIndex[0]);
-		}
 		return m.group(0);
 	}
 
-	public static final boolean contain(String response, Object succesStr) {
+	public static final boolean contain(String response, Object matchStr) {
 
-		return succesStr instanceof String ? response.contains((String) succesStr)
-				: ((Pattern) succesStr).matcher(response).find();
+		return matchStr instanceof String ? response.contains((String) matchStr)
+				: ((Pattern) matchStr).matcher(response).find();
 
 	}
 
@@ -103,14 +98,9 @@ public class simpleTextUtil {
 	}
 
 	public static final String unicodeToChinese(String text, boolean... isValidate) {
-		if (isValidate.length != 0) {
-			if (isValidate[0] && isUnicode(text)) {
-				return new UnicodeUnescaper().translate(text);
-			}
-			return text;
-		}
-		return new UnicodeUnescaper().translate(text);
-
+		if (isValidate.length != 0) 
+				return isValidate[0] && isUnicode(text)?new UnicodeUnescaper().translate(text):text;
+		return new UnicodeUnescaper().translate(text); 
 	}
 
 	public static final boolean isBase64(String str) {
@@ -121,15 +111,31 @@ public class simpleTextUtil {
 	}
 
 	public static final String getOriginFromUrl(String url) {
-		return textMatcher(url, "http(s)?://.+?(?=/)");
+		return textMatcher(url, "(http(s?)?|rmi|ftp)?://.+?(?=/)");
 	}
 
 	public static final String getHostFromUrl(String url) {
 		return textMatcher(url, "(?<=//|)((\\w)+\\.)+\\w+(:\\d*)?");
 	}
 
-	public static final String getMainHostFromUrl(String url) {
-		return textMatcher(url, "(?<=\\.)+(\\w)+\\.+\\w+");
+	public static final String getHostnameFromUrl(String url) {
+		return textMatcher(url, "(?<=//|)((\\w)+\\.)+\\w+(?=(:|/))?");
+	}
+
+	public static final String getSecondLevelDomainFromUrl(String url) {
+		return textMatcher(url, "(?<=\\.)?+(\\w)+\\.+\\w+");
+	}
+
+	public static final String getPortFromUrl(String url) {
+		return textMatcher(url, "(?<=:)\\d{1,5}");
+	}
+
+	public static final String getRmiName(String url) {
+		return textMatcher(url, "(?<=\\d{1,5}/).*");
+	}
+
+	public static final int getIntPortHostFromUrl(String url) {
+		return Integer.valueOf(getPortFromUrl(url));
 	}
 
 	public static final String decodeURIComponent(String s) {
@@ -239,10 +245,10 @@ public class simpleTextUtil {
 
 	private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-	public static final String getDate(String... args) {
+	public static final String getDateString(String... format) {
 
-		return args.length == 0 ? dateFormat.format(new Date()).toString()
-				: new SimpleDateFormat(args[0]).format(new Date()).toString();
+		return format.length == 0 ? dateFormat.format(new Date()).toString()
+				: new SimpleDateFormat(format[0]).format(new Date()).toString();
 
 	}
 
@@ -259,11 +265,6 @@ public class simpleTextUtil {
 		return args.length == 0 ? dateFormat.format(date).toString()
 				: new SimpleDateFormat(args[0]).format(date).toString();
 
-	}
-
-	public static final String getClassName(Object o) {
-		String s = o.getClass().getName();
-		return s.substring(s.lastIndexOf(".") + 1, s.length());
 	}
 
 	public static final String MD5Encrypt(String s) {
@@ -286,13 +287,37 @@ public class simpleTextUtil {
 		}
 	}
 
-	public static final boolean checkMobile(String mobile) {
+	public static final boolean validateChineseMobile(String mobile) {
 		return contain(mobile, Pattern.compile("^1[3456789]\\d{9}$"));
 	}
 
-	public static final boolean checkEmail(String email) {
+	public static final boolean validateEmail(String email) {
 		return contain(email, Pattern
 				.compile("^([a-z0-9A-Z]+[-|_|\\.]?)+[a-z0-9A-Z]@([a-z0-9A-Z]+(-[a-z0-9A-Z]+)?\\.)+[a-zA-Z]{2,}$"));
 
+	}
+
+	public static final String getPostData(InputStream in, int size, String charset) {
+		if (in != null && size > 0) {
+			byte[] buf = new byte[size];
+			try {
+				in.read(buf);
+				return (charset == null || charset.length() == 0) ? new String(buf) : new String(buf, charset);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return null;
+	}
+
+	public static final boolean validateWithinTime(Date startTime, Date validateTime, int timeout, int... timeunit) {
+		Calendar submitCal = Calendar.getInstance();
+		submitCal.setTime(startTime);// 要判断的日期
+		Calendar after = Calendar.getInstance();
+		after.setTime(startTime);
+		after.add(timeunit.length != 0 ? timeunit[0] : Calendar.SECOND, +timeout);
+		Calendar PayCal = Calendar.getInstance();
+		PayCal.setTime(validateTime);
+		return (PayCal.after(submitCal) && PayCal.before(after)) ? true : false;
 	}
 }
